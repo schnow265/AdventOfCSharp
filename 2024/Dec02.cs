@@ -30,56 +30,72 @@ namespace _2024
                     safeReports++;
                 }
             }
+
+            logger.Information("The Solution is: {Solution}", safeReports);
         }
 
-        public static bool IncDec(int[] arr)
+        private static bool IncDec(int[] arr)
         {
-            int difference = arr[1] - arr[0];
-            bool returning = false;
+            bool differenceLowerThanThree = false;
+            bool numbersChanged = true;
+            bool onlyOneAction = true;
 
             List<int> arrList = arr.ToList();
 
-            for (int i = 0; i <= arrList.Count; i++)
+            for (int i = 0; i < arrList.Count - 1; i++)
             {
-                if (i != 0 && !returning)
+
+                int c1 = arrList[i];
+                int c2 = arrList[i + 1];
+
+                if (c1 == c2)
                 {
+                    numbersChanged = false;
                     break;
                 }
 
-                int c1 = arrList[i + 1];
-                int c2 = arrList[i];
-
                 int currentDifference = c1 - c2;
 
-                if (currentDifference == difference)
+
+
+                if (currentDifference <= 3 && currentDifference > 0)
                 {
-                    returning = true;
+                    differenceLowerThanThree = true;
                 }
+                else if (currentDifference >= -3 && currentDifference <= 0) { differenceLowerThanThree = true; }
                 else
                 {
-                    if (currentDifference < difference)
-                    {
-                        throw new Exception("Difference is smaller!");
-                    }
-
-                    for (int j = 0; j <= 3; j++)
-                    {
-                        if (currentDifference == difference + j)
-                        {
-                            returning = true;
-                            break;
-                        }
-                        else
-                        {
-                            returning = false;
-                        }
-                    }
+                    differenceLowerThanThree = false;
+                    break;
                 }
 
-                difference = currentDifference;
+            }
+            onlyOneAction = IsMonotonic(arr);
+
+            return differenceLowerThanThree && numbersChanged && onlyOneAction;
+        }
+
+        private static bool IsMonotonic(int[] array)
+        {
+            if (array == null || array.Length < 2)
+                return true; // An empty or single-element array is considered monotonic.
+
+            bool isIncreasing = true;
+            bool isDecreasing = true;
+
+            for (int i = 1; i < array.Length; i++)
+            {
+                if (array[i] > array[i - 1])
+                    isDecreasing = false;
+                if (array[i] < array[i - 1])
+                    isIncreasing = false;
+
+                // If neither increasing nor decreasing, we can stop early.
+                if (!isIncreasing && !isDecreasing)
+                    return false;
             }
 
-            return returning;
+            return isIncreasing || isDecreasing;
         }
     }
 }
