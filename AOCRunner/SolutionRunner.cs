@@ -11,7 +11,14 @@ namespace AOCRunner
         {
             // Configure Serilog
             Log.Logger = new LoggerConfiguration()
-                .WriteTo.Console()
+                .MinimumLevel.Debug()
+                .WriteTo.Console(
+                    outputTemplate: "[{Timestamp:dd-MM-yyyy HH:mm:ss}] [{Level}] {Message:l}{NewLine}{Exception}"
+                )
+                .WriteTo.File(
+                    "log.txt",
+                    outputTemplate: "[{Timestamp:dd-MM-yyyy HH:mm:ss}] [{Level}] {Message:l}{NewLine}{Exception}"
+                )
                 .CreateLogger();
 
             Log.Information("Discovering solution classes...");

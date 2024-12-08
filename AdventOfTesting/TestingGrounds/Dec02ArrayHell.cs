@@ -1,37 +1,7 @@
-﻿using AOCRunner.Attributes;
-using Serilog;
-
-namespace _2024
+﻿namespace AdventOfTesting.TestingGrounds
 {
-    [Solution]
-    public class Dec02
+    public class Dec02ArrayHell
     {
-        private readonly ILogger logger;
-
-        public Dec02(ILogger logger)
-        {
-            this.logger = logger;
-        }
-
-        public void Part01()
-        {
-            string[] contents = File.ReadAllLines(Path.Join(Environment.CurrentDirectory, "Resources", "Day02Input.txt"));
-
-            logger.Debug("Read {LineCount} lines.", contents.Length);
-
-            int safeReports = 0;
-
-            foreach (string line in contents)
-            {
-                int[] lineSplit = line.Split(' ').Select(int.Parse).ToArray();
-
-                if (IncDec(lineSplit))
-                {
-                    safeReports++;
-                }
-            }
-        }
-
         public static bool IncDec(int[] arr)
         {
             int difference = arr[1] - arr[0];
@@ -57,10 +27,12 @@ namespace _2024
                 }
                 else
                 {
-                    if (currentDifference < difference)
-                    {
-                        throw new Exception("Difference is smaller!");
-                    }
+                    // 5(!) Tests affected by this problem!
+
+                    // if (currentDifference < difference)
+                    // {
+                    //     throw new Exception("Difference is smaller!");
+                    // }
 
                     for (int j = 0; j <= 3; j++)
                     {
@@ -81,5 +53,6 @@ namespace _2024
 
             return returning;
         }
+
     }
 }
