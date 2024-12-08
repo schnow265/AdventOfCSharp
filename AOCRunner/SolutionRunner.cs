@@ -11,45 +11,44 @@ namespace AOCRunner
         {
             // Configure Serilog
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
                 .WriteTo.Console()
                 .CreateLogger();
 
-            Log.Debug("Discovering solution methods...");
+            Log.Information("Discovering solution classes...");
 
-            // Get all methods in the current assembly with the [Solution] attribute
+            // Get all classes in the calling assembly with the [Solution] attribute
             var callingAssembly = Assembly.GetCallingAssembly();
-            var solutionMethods = callingAssembly
+            var solutionClasses = callingAssembly
                 .GetTypes()
-                .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
-                .Where(m => m.GetCustomAttribute<SolutionAttribute>() != null)
+                .Where(t => t.GetCustomAttribute<SolutionAttribute>() != null)
                 .ToList();
 
-            if (!solutionMethods.Any())
+            if (!solutionClasses.Any())
             {
-                Log.Warning("No solution methods found.");
+                Log.Warning("No solution classes found in assembly {AssemblyName}.", callingAssembly.FullName);
                 return;
             }
 
-            Log.Information("Available Solutions:");
-            for (int i = 0; i < solutionMethods.Count; i++)
+            Log.Information("Available Solution Classes:");
+            for (int i = 0; i < solutionClasses.Count; i++)
             {
-                Log.Information("{Index}. {Method}", i + 1, $"{solutionMethods[i].DeclaringType.Name}.{solutionMethods[i].Name}");
+                Log.Information("{Index}. {ClassName}", i + 1, solutionClasses[i].Name);
             }
 
-            Log.Information("Enter the number of the solution to run, or 'all' to run all:");
+            Log.Information("Enter the number of the solution class to run, or '*' to run all:");
             string input = Console.ReadLine();
 
-            if (input?.ToLower() == "all")
+            if (input?.ToLower() == "*")
             {
-                foreach (var method in solutionMethods)
+                foreach (var solutionClass in solutionClasses)
                 {
-                    ExecuteSolution(method);
+                    ExecuteSolutionClass(solutionClass);
                 }
             }
-            else if (int.TryParse(input, out int index) && index > 0 && index <= solutionMethods.Count)
+            else if (int.TryParse(input, out int classIndex) && classIndex > 0 && classIndex <= solutionClasses.Count)
             {
-                ExecuteSolution(solutionMethods[index - 1]);
+                var selectedClass = solutionClasses[classIndex - 1];
+                SelectAndExecuteMethodInClass(selectedClass);
             }
             else
             {
@@ -57,35 +56,109 @@ namespace AOCRunner
             }
         }
 
-        private static void ExecuteSolution(MethodInfo method)
+        private static void SelectAndExecuteMethodInClass(Type solutionClass)
         {
-            Log.Information("Running {Method}...", $"{method.DeclaringType.Name}.{method.Name}");
+            Log.Information("Running solutions in {ClassName}...", solutionClass.Name);
 
-            var instance = method.IsStatic ? null : Activator.CreateInstance(method.DeclaringType);
-            var parameters = method.GetParameters();
-
-            // Check if the method accepts ILogger as a parameter
-            var args = parameters.Select(p =>
+            var constructor = solutionClass.GetConstructor(new[] { typeof(ILogger) });
+            if (constructor == null)
             {
-                if (p.ParameterType == typeof(ILogger))
-                    return (object)Log.Logger;
-                return null; // Add handling for other types if needed
-            }).ToArray();
+                Log.Warning("{ClassName} does not have a constructor accepting ILogger.", solutionClass.Name);
+                return;
+            }
+
+            var instance = constructor.Invoke(new object[] { Log.Logger });
+
+            // Get all public methods in the class (excluding inherited ones like ToString, GetType, etc.)
+            var solutionMethods = solutionClass
+                .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                .Where(m => m.DeclaringType == solutionClass)  // Only methods declared in the class, not inherited ones
+                .Where(m => m.GetParameters().Length == 0)  // Optionally filter by methods that take no parameters
+                .ToList();
+
+            if (!solutionMethods.Any())
+            {
+                Log.Warning("No public methods found in {ClassName}.", solutionClass.Name);
+                return;
+            }
+
+            Log.Information("Available methods in {ClassName}:", solutionClass.Name);
+            for (int i = 0; i < solutionMethods.Count; i++)
+            {
+                Log.Information("{Index}. {MethodName}", i + 1, solutionMethods[i].Name);
+            }
+
+            Log.Information("Enter the number of the method to run, or '*' for all:");
+            string methodInput = Console.ReadLine();
+
+            if (int.TryParse(methodInput, out int methodIndex) && methodIndex > 0 && methodIndex <= solutionMethods.Count)
+            {
+                var selectedMethod = solutionMethods[methodIndex - 1];
+                ExecuteSolutionMethod(instance, selectedMethod);
+            }
+            else if (methodInput == "*")
+            {
+                foreach (var method in solutionMethods)
+                {
+                    ExecuteSolutionMethod(instance, method);
+                }
+            }
+            else
+            {
+                Log.Error("Invalid method selection. Exiting.");
+            }
+        }
+
+        private static void ExecuteSolutionClass(Type solutionClass)
+        {
+            Log.Information("Running methods in class {ClassName}...", solutionClass.Name);
+
+            var constructor = solutionClass.GetConstructor(new[] { typeof(ILogger) });
+            if (constructor == null)
+            {
+                Log.Warning("{ClassName} does not have a constructor accepting ILogger.", solutionClass.Name);
+                return;
+            }
+
+            var instance = constructor.Invoke(new object[] { Log.Logger });
+
+            // Get all public methods in the class (excluding inherited ones)
+            var solutionMethods = solutionClass
+                .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                .Where(m => m.DeclaringType == solutionClass)  // Only methods declared in the class
+                .Where(m => m.GetParameters().Length == 0)  // Optionally filter by methods that take no parameters
+                .ToList();
+
+            if (!solutionMethods.Any())
+            {
+                Log.Warning("No public methods found in {ClassName}.", solutionClass.Name);
+                return;
+            }
+
+            foreach (var method in solutionMethods)
+            {
+                ExecuteSolutionMethod(instance, method);
+            }
+        }
+
+        private static void ExecuteSolutionMethod(object instance, MethodInfo method)
+        {
+            Log.Information("Running method {MethodName}...", method.Name);
 
             var stopwatch = Stopwatch.StartNew();
 
             try
             {
-                method.Invoke(instance, args);
+                method.Invoke(instance, null);  // No parameters
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error running solution.");
+                Log.Error(ex, "Error running method.");
                 return;
             }
 
             stopwatch.Stop();
-            Log.Information("{Method} completed in {ElapsedMilliseconds} ms.", method.Name, stopwatch.ElapsedMilliseconds);
+            Log.Information("{MethodName} completed in {ElapsedMilliseconds} ms.", method.Name, stopwatch.ElapsedMilliseconds);
         }
     }
 }

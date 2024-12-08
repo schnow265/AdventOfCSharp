@@ -3,12 +3,19 @@ using Serilog;
 
 namespace _2024
 {
+    [Solution]
     public class Dec01
     {
-        [Solution(requiresLogger: true)]
-        public void Part01(ILogger logger)
+        private readonly ILogger logger;
+
+        public Dec01(ILogger logger)
         {
-            var sortedItems = SplitFile(logger);
+            this.logger = logger;
+        }
+
+        public void Part01()
+        {
+            var sortedItems = SplitFile();
 
             List<int> leftCol = sortedItems.Item1;
             List<int> rightCol = sortedItems.Item2;
@@ -34,10 +41,9 @@ namespace _2024
             logger.Information("The result for Day 1 is: '{Res}'", distances.Sum());
         }
 
-        [Solution(requiresLogger: true)]
-        public void Part02(ILogger logger)
+        public void Part02()
         {
-            var sortedItems = SplitFile(logger);
+            var sortedItems = SplitFile();
 
             List<int> leftCol = sortedItems.Item1;
             List<int> rightCol = sortedItems.Item2;
@@ -50,7 +56,7 @@ namespace _2024
             logger.Information("The result for Day 1 is: '{Res}'", result);
         }
 
-        private static (List<int>, List<int>) SplitFile(ILogger logger)
+        private (List<int>, List<int>) SplitFile()
         {
             string path = Path.Join(Environment.CurrentDirectory, "Resources", "Day01Input.txt");
 
