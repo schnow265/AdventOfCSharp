@@ -4,14 +4,9 @@ using Serilog;
 namespace _2024
 {
     [Solution]
-    public class Dec02
+    public class Dec02(ILogger logger)
     {
-        private readonly ILogger logger;
-
-        public Dec02(ILogger logger)
-        {
-            this.logger = logger;
-        }
+        private readonly ILogger logger = logger;
 
         public void Part01()
         {
@@ -32,6 +27,53 @@ namespace _2024
             }
 
             logger.Information("The Solution is: {Solution}", safeReports);
+        }
+
+        public void Part02()
+        {
+            string[] contents = File.ReadAllLines(Path.Join(Environment.CurrentDirectory, "Resources", "Day02Input.txt"));
+
+            logger.Debug("Read {LineCount} lines.", contents.Length);
+
+            int safeReports = 0;
+
+            foreach (string line in contents)
+            {
+                int[] lineSplit = line.Split(' ').Select(int.Parse).ToArray();
+
+                if (OHMYGOODNESS(lineSplit))
+                {
+                    safeReports++;
+                }
+            }
+
+            logger.Information("The Solution is: {Solution}", safeReports);
+        }
+
+        private static bool OHMYGOODNESS(int[] arr)
+        {
+            List<int> arrList = [.. arr];
+
+            if (IncDec(arr))
+            {
+                return true;
+            }
+
+            for (int i = 0; i < arrList.Count; i++)
+            {
+                int[] arrayHell = arrList.ToArray();
+
+                List<int> tmp = arrayHell.ToList();
+
+                tmp.RemoveAt(i);
+
+                if (IncDec(tmp.ToArray()))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool IncDec(int[] arr)
